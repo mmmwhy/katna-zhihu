@@ -86,7 +86,7 @@ test_requirements = to_list(
 
 
 setuptools.setup(
-    name="katna",
+    name="katna-zhihu",
     version=__version__,
     author="keplerlab",
     author_email="keplerwaasi@gmail.com",

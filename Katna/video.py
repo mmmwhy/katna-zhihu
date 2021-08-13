@@ -39,7 +39,7 @@ class Video(object):
     :type object: class:`Object`
     """
 
-    def __init__(self, autoflip_build_path=None, autoflip_model_path=None):
+    def __init__(self, autoflip_build_path=None, autoflip_model_path=None, use_cpu_count: int = 0):
         # Find out location of ffmpeg binary on system
         helper._set_ffmpeg_binary_path()
         # If the duration of the clipped video is less than **min_video_duration**
@@ -47,7 +47,13 @@ class Video(object):
         self._min_video_duration = config.Video.min_video_duration
 
         # Calculating optimum number of processes for multiprocessing
-        self.n_processes = cpu_count() // 2 - 1
+        if not use_cpu_count:
+            self.use_cpu_count = cpu_count()
+        else:
+            self.use_cpu_count = use_cpu_count
+
+        self.n_processes = self.use_cpu_count // 2 - 1
+
         if self.n_processes < 1:
             self.n_processes = None
 
@@ -209,9 +215,9 @@ class Video(object):
             print("Running for : ", filepath)
             try:
                 keyframes = self._extract_keyframes_from_video(no_of_frames, filepath)
-                yield {"keyframes": keyframes, "error": None,"filepath": filepath}
+                yield {"keyframes": keyframes, "error": None, "filepath": filepath}
             except Exception as e:
-                yield {"keyframes": [],"error": e,"filepath": filepath}
+                yield {"keyframes": [], "error": e, "filepath": filepath}
 
     @FileDecorators.validate_dir_path
     def extract_keyframes_from_videos_dir(self, no_of_frames, dir_path, writer):
@@ -345,7 +351,8 @@ class Video(object):
 
         # seconds to reach threshold if all frames are collected, but not all are candidate frames
         # so we can easily multiple this number with a constant
-        no_of_sec_to_reach_threshold = (available_memory / (fps * frame_size_in_bytes)) * config.Video.assumed_no_of_frames_per_candidate_frame
+        no_of_sec_to_reach_threshold = (available_memory / (
+                    fps * frame_size_in_bytes)) * config.Video.assumed_no_of_frames_per_candidate_frame
 
         if break_duration_in_sec > no_of_sec_to_reach_threshold:
             break_duration_in_sec = math.floor(no_of_sec_to_reach_threshold)
@@ -404,13 +411,13 @@ class Video(object):
 
     @FileDecorators.validate_file_path
     def compress_video(
-        self,
-        file_path,
-        force_overwrite=False,
-        crf_parameter=config.Video.video_compression_crf_parameter,
-        output_video_codec=config.Video.video_compression_codec,
-        out_dir_path="",
-        out_file_name="",
+            self,
+            file_path,
+            force_overwrite=False,
+            crf_parameter=config.Video.video_compression_crf_parameter,
+            output_video_codec=config.Video.video_compression_codec,
+            out_dir_path="",
+            out_file_name="",
     ):
         """Function to compress given input file
 
@@ -463,13 +470,13 @@ class Video(object):
 
     @FileDecorators.validate_dir_path
     def compress_videos_from_dir(
-        self,
-        dir_path,
-        force_overwrite=False,
-        crf_parameter=config.Video.video_compression_crf_parameter,
-        output_video_codec=config.Video.video_compression_codec,
-        out_dir_path="",
-        out_file_name="",
+            self,
+            dir_path,
+            force_overwrite=False,
+            crf_parameter=config.Video.video_compression_crf_parameter,
+            output_video_codec=config.Video.video_compression_codec,
+            out_dir_path="",
+            out_file_name="",
     ):
         """Function to compress input video files in a folder
 
@@ -568,7 +575,7 @@ class Video(object):
         if break_point_duration_in_sec is None:
             clip_start, break_point = (
                 0,
-                duration // cpu_count() if duration // cpu_count() > 15 else 25,
+                duration // self.use_cpu_count if duration // self.use_cpu_count > 15 else 25,
             )
         else:
             clip_start, break_point = (
@@ -630,7 +637,7 @@ class Video(object):
         return _clipped_file_path
 
     def _ffmpeg_extract_subclip(
-        self, filename, t1, t2, targetname=None, override_video_codec=False
+            self, filename, t1, t2, targetname=None, override_video_codec=False
     ):
         """chops a new video clip from video file ``filename`` between
             the times ``t1`` and ``t2``, Uses ffmpy wrapper on top of ffmpeg
@@ -653,7 +660,7 @@ class Video(object):
             T1, T2 = [int(1000 * t) for t in [t1, t2]]
             targetname = name + "{0}SUB{1}_{2}.{3}".format(name, T1, T2, ext)
 
-        #timeParamter = "-ss " + "%0.2f" % t1 + " -t " + "%0.2f" % (t2 - t1)
+        # timeParamter = "-ss " + "%0.2f" % t1 + " -t " + "%0.2f" % (t2 - t1)
 
         ssParameter = "-ss " + "%0.2f" % t1
         timeParamter = " -t " + "%0.2f" % (t2 - t1)

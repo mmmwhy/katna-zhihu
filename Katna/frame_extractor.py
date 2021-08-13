@@ -3,6 +3,7 @@
     :platform: OS X
     :synopsis: This module has functions related to key frame extraction 
 """
+import time
 
 import cv2
 import operator
@@ -102,6 +103,7 @@ class FrameExtractor(object):
                     prev_frame, curr_frame = self.__process_frame(frame, prev_frame, frame_diffs, frames)
                     i = i + 1
                     ret, frame = cap.read()
+                    time.sleep(0.01)
                     # print(frame_count)
                 else:
                     cap.release()
@@ -205,7 +207,7 @@ class FrameExtractor(object):
         frame_extractor_from_video_generator = self.__extract_all_frames_from_video__(
             videopath
         )
-
+        time.sleep(1)
         # Loop over every frame in the frame extractor generator object and calculate the
         # local maxima of frames 
         for frames, frame_diffs in frame_extractor_from_video_generator:
@@ -219,5 +221,6 @@ class FrameExtractor(object):
                 extracted_candidate_key_frames.extend(
                     extracted_candidate_key_frames_chunk
                 )
+                time.sleep(1)
 
         return extracted_candidate_key_frames
